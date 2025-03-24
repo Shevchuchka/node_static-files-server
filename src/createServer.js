@@ -1,21 +1,27 @@
 'use strict';
 
-const fs = require('node:fs');
-const path = require('node:path');
-const http = require('node:http');
+const fs = require('fs');
+const path = require('path');
+const http = require('http');
 
-// const PREFIX = '/file';
+const PREFIX = '/file';
 
 function createServer() {
   const server = http.createServer((req, res) => {
-    const requestPrefix = '/file';
-
     res.setHeader('Content-Type', 'text/plain');
 
     const { pathname } = new URL(req.url, `http://${req.headers.host}`);
 
+    const filePath = pathname.replace(`${PREFIX}`, '') || '/index.html';
+
+    if (pathname === PREFIX || pathname === `${PREFIX}/`) {
+      res.statusMessage = `Please, use next format: http://${req.headers.host}${PREFIX}/<path_to_your_file>`;
+    } else {
+      res.statusMessage = 'OK';
+    }
+
     if (pathname.includes('//')) {
-      res.writeHead(404, 'paths have duplicated slashes');
+      res.writeHead(404, 'traversal paths');
 
       res.end(
         `Please, use next format: http://${req.headers.host}${PREFIX}/<path_to_your_file>`,
@@ -24,7 +30,7 @@ function createServer() {
       return;
     }
 
-    if (!pathname.startsWith(requestPrefix)) {
+    if (!pathname.startsWith(PREFIX)) {
       res.writeHead(400, 'Bad request');
 
       res.end(
@@ -34,14 +40,9 @@ function createServer() {
       return;
     }
 
-    const fileName = path.join(
-      'public',
-      pathname === requestPrefix || pathname === `${requestPrefix}/`
-        ? 'index.html'
-        : pathname.replace(requestPrefix, ''),
-    );
+    const realPath = path.join(__dirname, '..', 'public', filePath);
 
-    fs.readFile(fileName, (err, data) => {
+    fs.readFile(realPath, (err, data) => {
       if (err) {
         res.writeHead(404, 'Not Found');
         res.end(`404 Not Found`);
@@ -50,11 +51,6 @@ function createServer() {
       }
 
       res.statusCode = 200;
-      res.statusMessage = 'OK';
-
-      if (!pathname.startsWith('/file/')) {
-        res.statusMessage = 'route not starting with /file/';
-      }
 
       res.end(data);
     });
