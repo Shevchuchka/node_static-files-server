@@ -4,10 +4,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 
-const PREFIX = '/file';
+// const PREFIX = '/file';
 
 function createServer() {
   const server = http.createServer((req, res) => {
+    const requestPrefix = '/file';
+
     res.setHeader('Content-Type', 'text/plain');
 
     const { pathname } = new URL(req.url, `http://${req.headers.host}`);
@@ -22,7 +24,7 @@ function createServer() {
       return;
     }
 
-    if (!pathname.startsWith(PREFIX)) {
+    if (!pathname.startsWith(requestPrefix)) {
       res.writeHead(400, 'Bad request');
 
       res.end(
@@ -34,9 +36,9 @@ function createServer() {
 
     const fileName = path.join(
       'public',
-      pathname === PREFIX || pathname === `${PREFIX}/`
+      pathname === requestPrefix || pathname === `${requestPrefix}/`
         ? 'index.html'
-        : pathname.replace(PREFIX, ''),
+        : pathname.replace(requestPrefix, ''),
     );
 
     fs.readFile(fileName, (err, data) => {
